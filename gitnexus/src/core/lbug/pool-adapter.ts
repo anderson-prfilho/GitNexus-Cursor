@@ -611,7 +611,10 @@ export const isLbugReady = (repoId: string): boolean => pool.has(repoId);
 export const CYPHER_WRITE_RE =
   /(?<!:)\b(CREATE|DELETE|SET|MERGE|REMOVE|DROP|ALTER|COPY|DETACH|FOREACH|INSTALL|LOAD)\b/i;
 
-/** Check if a Cypher query contains write operations */
+/** Check if a Cypher query contains write operations.
+ * Strips quoted string contents first to avoid false positives from
+ * file paths like `core/rh/load/sqlserver.py` matching LOAD. */
 export function isWriteQuery(query: string): boolean {
-  return CYPHER_WRITE_RE.test(query);
+  const stripped = query.replace(/'[^']*'/g, "''").replace(/"[^"]*"/g, '""');
+  return CYPHER_WRITE_RE.test(stripped);
 }

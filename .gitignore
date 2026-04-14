@@ -107,3 +107,8 @@ local_docs/
 .tmp/
 .agents/
 .context/
+openspec/
+.cursor/commands/
+.cursor/skills/
+.github/prompts/
+.github/skills/

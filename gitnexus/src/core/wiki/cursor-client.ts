@@ -78,24 +78,30 @@ export async function callCursorLLM(
   // that pollutes the actual content when using thinking models.
   const fullPrompt = systemPrompt ? `${systemPrompt}\n\n---\n\n${prompt}` : prompt;
 
-  const args = ['-p', '--output-format', 'text'];
+  const isWin = process.platform === 'win32';
+
+  const args = ['-p', '--output-format', 'text', '--trust'];
 
   if (config.model) {
     args.push('--model', config.model);
   }
 
-  // Add the prompt as the final argument
-  args.push(fullPrompt);
+  // On Windows, the prompt is sent via stdin to avoid cmd.exe's 8191-char limit.
+  // On other platforms, it's passed as the final CLI argument.
+  if (!isWin) {
+    args.push(fullPrompt);
+  }
 
   verboseLog(
     'Spawning:',
     cursorBin,
-    args.slice(0, -1).join(' '),
+    args.join(' '),
     '[prompt length:',
     fullPrompt.length,
     'chars]',
   );
   verboseLog('Working directory:', config.workingDirectory || process.cwd());
+  verboseLog('Platform:', process.platform, isWin ? '(stdin mode)' : '(arg mode)');
   if (config.model) {
     verboseLog('Model:', config.model);
   } else {
@@ -105,12 +111,19 @@ export async function callCursorLLM(
   const startTime = Date.now();
 
   return new Promise((resolve, reject) => {
-    const child = spawn(cursorBin, args, {
+    // On Windows: build a single command string with chcp for UTF-8 to avoid
+    // DEP0190 warning and code page issues with accented characters.
+    const spawnCmd = isWin
+      ? `chcp 65001 >nul && ${cursorBin} ${args.join(' ')}`
+      : cursorBin;
+    const spawnArgs = isWin ? [] : args;
+
+    const child = spawn(spawnCmd, spawnArgs, {
       cwd: config.workingDirectory || process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
+      shell: isWin,
       env: {
         ...process.env,
-        // Ensure non-interactive mode
         CI: '1',
       },
     });
@@ -120,13 +133,13 @@ export async function callCursorLLM(
     let stdout = '';
     let stderr = '';
 
-    // Text mode - collect all output, report progress based on output size
-    child.stdout.on('data', (chunk: Buffer) => {
-      const chunkStr = chunk.toString();
-      stdout += chunkStr;
-      verboseLog(`[stdout] received ${chunkStr.length} chars, total: ${stdout.length}`);
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
 
-      // Report progress if callback provided
+    child.stdout.on('data', (chunk: string) => {
+      stdout += chunk;
+      verboseLog(`[stdout] received ${chunk.length} chars, total: ${stdout.length}`);
+
       if (options?.onChunk) {
         options.onChunk(stdout.length);
       }
@@ -145,10 +158,9 @@ export async function callCursorLLM(
       resolve({ content: stdout.trim() });
     });
 
-    child.stderr.on('data', (chunk: Buffer) => {
-      const chunkStr = chunk.toString();
-      stderr += chunkStr;
-      verboseLog('[stderr]', chunkStr.trim());
+    child.stderr.on('data', (chunk: string) => {
+      stderr += chunk;
+      verboseLog('[stderr]', chunk.trim());
     });
 
     child.on('error', (err) => {
@@ -156,7 +168,9 @@ export async function callCursorLLM(
       reject(new Error(`Failed to spawn Cursor CLI: ${err.message}`));
     });
 
-    // Close stdin immediately since we pass prompt as argument
+    if (isWin) {
+      child.stdin.write(fullPrompt, 'utf8');
+    }
     child.stdin.end();
   });
 }
