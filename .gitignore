@@ -96,3 +96,8 @@ GitNexus.sln
 .swarm/
 
 local_docs/
+openspec/
+.cursor/commands/
+.cursor/skills/
+.github/prompts/
+.github/skills/

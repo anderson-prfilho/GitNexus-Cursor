@@ -1,9 +1,8 @@
 /**
  * AI Context Generator
  *
- * Creates AGENTS.md and CLAUDE.md with full inline GitNexus context.
- * AGENTS.md is the standard read by Cursor, Windsurf, OpenCode, Codex, Cline, etc.
- * CLAUDE.md is for Claude Code which only reads that file.
+ * Creates AGENTS.md with full inline GitNexus context and installs
+ * skills to .cursor/skills/ for Cursor integration.
  */
 
 import fs from 'fs/promises';
@@ -72,19 +71,19 @@ function generateGitNexusContent(
       ? generatedSkills
           .map(
             (s) =>
-              `| Work in the ${s.label} area (${s.symbolCount} symbols) | \`.claude/skills/generated/${s.name}/SKILL.md\` |`,
+              `| Work in the ${s.label} area (${s.symbolCount} symbols) | \`.cursor/skills/${s.name}/SKILL.md\` |`,
           )
           .join('\n')
       : '';
 
   const skillsTable = `| Task | Read this skill file |
 |------|---------------------|
-| Understand architecture / "How does X work?" | \`.claude/skills/gitnexus/gitnexus-exploring/SKILL.md\` |
-| Blast radius / "What breaks if I change X?" | \`.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md\` |
-| Trace bugs / "Why is X failing?" | \`.claude/skills/gitnexus/gitnexus-debugging/SKILL.md\` |
-| Rename / extract / split / refactor | \`.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md\` |
-| Tools, resources, schema reference | \`.claude/skills/gitnexus/gitnexus-guide/SKILL.md\` |
-| Index, status, clean, wiki CLI commands | \`.claude/skills/gitnexus/gitnexus-cli/SKILL.md\` |${generatedRows ? '\n' + generatedRows : ''}`;
+| Understand architecture / "How does X work?" | \`.cursor/skills/gitnexus-exploring/SKILL.md\` |
+| Blast radius / "What breaks if I change X?" | \`.cursor/skills/gitnexus-impact-analysis/SKILL.md\` |
+| Trace bugs / "Why is X failing?" | \`.cursor/skills/gitnexus-debugging/SKILL.md\` |
+| Rename / extract / split / refactor | \`.cursor/skills/gitnexus-refactoring/SKILL.md\` |
+| Tools, resources, schema reference | \`.cursor/skills/gitnexus-guide/SKILL.md\` |
+| Index, status, clean, wiki CLI commands | \`.cursor/skills/gitnexus-cli/SKILL.md\` |${generatedRows ? '\n' + generatedRows : ''}`;
 
   return `${GITNEXUS_START_MARKER}
 # GitNexus — Code Intelligence
@@ -173,7 +172,7 @@ npx gitnexus analyze --embeddings
 
 To check whether embeddings exist, inspect \`.gitnexus/meta.json\` — the \`stats.embeddings\` field shows the count (0 means no embeddings). **Running analyze without \`--embeddings\` will delete any previously generated embeddings.**
 
-> Claude Code users: A PostToolUse hook handles this automatically after \`git commit\` and \`git merge\`.
+> Claude Code and Cursor users: A PostToolUse hook handles this automatically after \`git commit\` and \`git merge\`.
 
 ${
   groupNames && groupNames.length > 0
@@ -241,11 +240,10 @@ async function upsertGitNexusSection(
 }
 
 /**
- * Install GitNexus skills to .claude/skills/gitnexus/
- * Works natively with Claude Code, Cursor, and GitHub Copilot
+ * Install GitNexus skills to .cursor/skills/
  */
 async function installSkills(repoPath: string): Promise<string[]> {
-  const skillsDir = path.join(repoPath, '.claude', 'skills', 'gitnexus');
+  const skillsDir = path.join(repoPath, '.cursor', 'skills');
   const installedSkills: string[] = [];
 
   // Skill definitions bundled with the package
@@ -344,24 +342,16 @@ export async function generateAIContextFiles(
   const createdFiles: string[] = [];
 
   if (!options?.skipAgentsMd) {
-    // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Cline, etc.)
     const agentsPath = path.join(repoPath, 'AGENTS.md');
     const agentsResult = await upsertGitNexusSection(agentsPath, content);
     createdFiles.push(`AGENTS.md (${agentsResult})`);
-
-    // Create CLAUDE.md (for Claude Code)
-    const claudePath = path.join(repoPath, 'CLAUDE.md');
-    const claudeResult = await upsertGitNexusSection(claudePath, content);
-    createdFiles.push(`CLAUDE.md (${claudeResult})`);
   } else {
     createdFiles.push('AGENTS.md (skipped via --skip-agents-md)');
-    createdFiles.push('CLAUDE.md (skipped via --skip-agents-md)');
   }
 
-  // Install skills to .claude/skills/gitnexus/
   const installedSkills = await installSkills(repoPath);
   if (installedSkills.length > 0) {
-    createdFiles.push(`.claude/skills/gitnexus/ (${installedSkills.length} skills)`);
+    createdFiles.push(`.cursor/skills/ (${installedSkills.length} skills)`);
   }
 
   return { files: createdFiles };
