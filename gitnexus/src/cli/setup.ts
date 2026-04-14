@@ -415,6 +415,64 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
   }
 }
 
+/**
+ * Install GitNexus hooks to ~/.cursor/hooks.json for Cursor.
+ * Copies the hook script and merges hook config without overwriting existing hooks.
+ */
+async function installCursorHooks(result: SetupResult): Promise<void> {
+  const cursorDir = path.join(os.homedir(), '.cursor');
+  if (!(await dirExists(cursorDir))) return;
+
+  const pluginHooksPath = path.join(__dirname, '..', '..', 'hooks', 'cursor');
+  const destHooksDir = path.join(cursorDir, 'hooks', 'gitnexus');
+
+  try {
+    await fs.mkdir(destHooksDir, { recursive: true });
+
+    const src = path.join(pluginHooksPath, 'gitnexus-hook.cjs');
+    const dest = path.join(destHooksDir, 'gitnexus-hook.cjs');
+    try {
+      let content = await fs.readFile(src, 'utf-8');
+      const resolvedCli = path.join(__dirname, '..', 'cli', 'index.js');
+      const normalizedCli = path.resolve(resolvedCli).replace(/\\/g, '/');
+      const jsonCli = JSON.stringify(normalizedCli);
+      content = content.replace(
+        "let cliPath = path.resolve(__dirname, '..', '..', 'dist', 'cli', 'index.js');",
+        `let cliPath = ${jsonCli};`,
+      );
+      await fs.writeFile(dest, content, 'utf-8');
+    } catch {
+      // Script not found in source — skip
+    }
+
+    const hookPath = path.join(destHooksDir, 'gitnexus-hook.cjs').replace(/\\/g, '/');
+    const hookCmd = `node "${hookPath.replace(/"/g, '\\"')}"`;
+
+    const hooksJsonPath = path.join(cursorDir, 'hooks.json');
+    const existing = (await readJsonFile(hooksJsonPath)) || { version: 1, hooks: {} };
+    if (!existing.version) existing.version = 1;
+    if (!existing.hooks) existing.hooks = {};
+    if (!existing.hooks.postToolUse) existing.hooks.postToolUse = [];
+
+    const hasHook = existing.hooks.postToolUse.some(
+      (h: { command?: string }) => h.command?.includes('gitnexus-hook'),
+    );
+
+    if (!hasHook) {
+      existing.hooks.postToolUse.push({
+        command: hookCmd,
+        matcher: 'Shell|Grep',
+        timeout: 10,
+      });
+    }
+
+    await writeJsonFile(hooksJsonPath, existing);
+    result.configured.push('Cursor hooks (postToolUse)');
+  } catch (err: any) {
+    result.errors.push(`Cursor hooks: ${err.message}`);
+  }
+}
+
 async function setupOpenCode(result: SetupResult): Promise<void> {
   const opencodeDir = path.join(os.homedir(), '.config', 'opencode');
   if (!(await dirExists(opencodeDir))) {
@@ -657,6 +715,7 @@ export const setupCommand = async () => {
   // Install global skills for platforms that support them
   await installClaudeCodeSkills(result);
   await installClaudeCodeHooks(result);
+  await installCursorHooks(result);
   await installCursorSkills(result);
   await installOpenCodeSkills(result);
   await installCodexSkills(result);

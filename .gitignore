@@ -108,3 +108,8 @@ local_docs/
 .agents/
 .context/
 gitnexus/web/
+openspec/
+.cursor/commands/
+.cursor/skills/
+.github/prompts/
+.github/skills/
