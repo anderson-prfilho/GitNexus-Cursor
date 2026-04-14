@@ -267,3 +267,16 @@ export function createGitNexusPathEntry(): { pathValue: string; cleanup: () => v
     cleanup: () => fs.rmSync(binDir, { recursive: true, force: true }),
   };
 }
+
+/**
+ * Parse Cursor hook output format: { additional_context: "..." }
+ */
+export function parseCursorHookOutput(stdout: string): string | null {
+  if (!stdout.trim()) return null;
+  try {
+    const parsed = JSON.parse(stdout.trim());
+    return parsed.additional_context || null;
+  } catch {
+    return null;
+  }
+}

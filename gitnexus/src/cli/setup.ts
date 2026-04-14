@@ -764,6 +764,84 @@ async function installAntigravityHooks(result: SetupResult): Promise<void> {
   }
 }
 
+/**
+ * Install GitNexus hooks to ~/.cursor/hooks.json for Cursor.
+ * Copies the hook script and merges hook config without overwriting existing hooks.
+ */
+async function installCursorHooks(result: SetupResult): Promise<void> {
+  const cursorDir = path.join(os.homedir(), '.cursor');
+  if (!(await dirExists(cursorDir))) return;
+
+  const pluginHooksPath = path.join(__dirname, '..', '..', 'hooks', 'cursor');
+  const destHooksDir = path.join(cursorDir, 'hooks', 'gitnexus');
+
+  try {
+    await fs.mkdir(destHooksDir, { recursive: true });
+
+    const src = path.join(pluginHooksPath, 'gitnexus-hook.cjs');
+    const dest = path.join(destHooksDir, 'gitnexus-hook.cjs');
+    try {
+      let content = await fs.readFile(src, 'utf-8');
+      const resolvedCli = path.join(__dirname, '..', 'cli', 'index.js');
+      const normalizedCli = path.resolve(resolvedCli).replace(/\\/g, '/');
+      const jsonCli = JSON.stringify(normalizedCli);
+      if (!content.includes(CLI_PATH_SOURCE_LITERAL)) {
+        result.errors.push(
+          'Cursor hooks: gitnexus-hook.cjs no longer contains the cliPath literal to patch — the installed hook may fail to resolve the CLI. Update CLI_PATH_SOURCE_LITERAL in setup.ts.',
+        );
+      }
+      content = content.replace(CLI_PATH_SOURCE_LITERAL, `let cliPath = ${jsonCli};`);
+      await fs.writeFile(dest, content, 'utf-8');
+    } catch {
+      // Script not found in source — skip
+    }
+
+    try {
+      await fs.access(dest);
+    } catch {
+      result.errors.push(
+        'Cursor hooks: adapter script was not installed — skipping hook registration',
+      );
+      return;
+    }
+
+    const hookPath = path.join(destHooksDir, 'gitnexus-hook.cjs').replace(/\\/g, '/');
+    const hookCmd = formatHookCommand(hookPath);
+
+    const hooksJsonPath = path.join(cursorDir, 'hooks.json');
+    let existing: { version?: number; hooks?: { postToolUse?: Array<{ command?: string }> } };
+    try {
+      const raw = await fs.readFile(hooksJsonPath, 'utf-8');
+      existing = parseJsonc(raw) as typeof existing;
+    } catch {
+      existing = { version: 1, hooks: {} };
+    }
+    if (!existing.version) existing.version = 1;
+    if (!existing.hooks) existing.hooks = {};
+    if (!existing.hooks.postToolUse) existing.hooks.postToolUse = [];
+
+    const hasHook = existing.hooks.postToolUse.some(
+      (h) => typeof h.command === 'string' && h.command.includes('gitnexus-hook'),
+    );
+
+    if (hasHook) {
+      result.configured.push('Cursor hooks (already configured)');
+      return;
+    }
+
+    existing.hooks.postToolUse.push({
+      command: hookCmd,
+      matcher: 'Shell|Read|Grep',
+      timeout: 10,
+    });
+
+    await fs.writeFile(hooksJsonPath, `${JSON.stringify(existing, null, 2)}\n`, 'utf-8');
+    result.configured.push('Cursor hooks (postToolUse)');
+  } catch (err: any) {
+    result.errors.push(`Cursor hooks: ${err.message}`);
+  }
+}
+
 async function setupOpenCode(result: SetupResult): Promise<void> {
   const opencodeDir = path.join(os.homedir(), '.config', 'opencode');
   if (!(await dirExists(opencodeDir))) {
@@ -1036,7 +1114,10 @@ export const setupCommand = async (options?: { codingAgent?: string[] | string }
     await installAntigravitySkills(result);
     await installAntigravityHooks(result);
   }
-  if (selected.has('cursor')) await installCursorSkills(result);
+  if (selected.has('cursor')) {
+    await installCursorHooks(result);
+    await installCursorSkills(result);
+  }
   if (selected.has('opencode')) await installOpenCodeSkills(result);
   if (selected.has('codex')) await installCodexSkills(result);
 
