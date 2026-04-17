@@ -23,6 +23,10 @@
 
 </div>
 
+## Sobre este fork
+
+Fork de [abhigyanpatwari/GitNexus](https://github.com/abhigyanpatwari/GitNexus) com ênfase em **integração com o Cursor**: instalação de skills na árvore `.cursor/`, **hooks** pós-ferramenta (`postToolUse`) via `gitnexus setup` com `gitnexus-hook.cjs` (substituindo o fluxo legado em shell), suporte a testes automatizados dos hooks e entradas extras no `.gitignore` para pastas locais de workflow (`openspec/`, comandos e skills do Cursor, prompts/skills em `.github/`). O histórico segue o upstream; o trabalho local concentra-se em agentes e automação no Cursor.
+
 **Building nervous system for agent context.**
 
 Indexes any codebase into a knowledge graph — every dependency, call chain, cluster, and execution flow — then exposes it through smart tools so AI agents never miss code.
