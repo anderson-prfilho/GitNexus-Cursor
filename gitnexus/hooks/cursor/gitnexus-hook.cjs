@@ -15,14 +15,19 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
+// Kill the process if stdin hangs (subagent contexts may not close stdin).
+const STDIN_TIMEOUT = setTimeout(() => process.exit(0), 8000);
+
 /**
  * Read JSON input from stdin synchronously.
  */
 function readInput() {
   try {
     const data = fs.readFileSync(0, 'utf-8').replace(/^\uFEFF/, '');
+    clearTimeout(STDIN_TIMEOUT);
     return JSON.parse(data);
   } catch {
+    clearTimeout(STDIN_TIMEOUT);
     return {};
   }
 }
@@ -76,11 +81,14 @@ function extractPattern(toolName, toolInput) {
   if (toolName === 'Grep') {
     const raw = toolInput.pattern || '';
     if (!raw) return null;
-    // Grep patterns are regex — extract the first meaningful term.
-    // Split on | (alternation), strip regex metacharacters, pick the longest.
+    // Grep patterns are regex — extract meaningful terms.
+    // 1. Split on | (alternation)
+    // 2. Replace regex metacharacters with space (avoid word concatenation)
+    // 3. Split on whitespace, strip prefixes like "def ", pick the best term
     const terms = raw.split('|')
-      .map(t => t.replace(/\\[bBdDwWsS]|[.*+?^${}()\[\]\\]/g, '').trim())
-      .filter(t => t.length >= 3);
+      .flatMap(t => t.replace(/\\[bBdDwWsS]|[.*+?^${}()\[\]\\=]/g, ' ').trim().split(/\s+/))
+      .map(t => t.replace(/^def$/, '').replace(/^(def|class|function|import|from|return)\s*/i, '').trim())
+      .filter(t => t.length >= 3 && !/^(def|class|function|import|from|return|const|let|var)$/i.test(t));
     if (terms.length === 0) return null;
     terms.sort((a, b) => b.length - a.length);
     return terms[0];
