@@ -234,6 +234,23 @@ function hasGitnexusHook(hooksObj: any, eventName: string): boolean {
 }
 
 /**
+ * True when ~/.cursor/hooks.json already registers a GitNexus postToolUse hook
+ * (Cursor uses a flat { command, matcher, timeout } shape per entry).
+ */
+function hasCursorGitnexusPostToolUse(parsed: unknown): boolean {
+  const hooks = (parsed as { hooks?: { postToolUse?: unknown[] } } | null)?.hooks;
+  const entries = hooks?.postToolUse;
+  if (!Array.isArray(entries)) return false;
+  return entries.some(
+    (h: unknown) =>
+      h !== null &&
+      typeof h === 'object' &&
+      typeof (h as { command?: string }).command === 'string' &&
+      (h as { command: string }).command.includes('gitnexus-hook'),
+  );
+}
+
+/**
  * Merge hook entries into a JSONC settings file, preserving comments and formatting.
  * Uses chained modify()+applyEdits() calls to append to arrays without a full
  * JSON.stringify roundtrip that would strip comments.
@@ -437,24 +454,57 @@ async function installCursorHooks(result: SetupResult): Promise<void> {
     const hookCmd = `node "${hookPath.replace(/"/g, '\\"')}"`;
 
     const hooksJsonPath = path.join(cursorDir, 'hooks.json');
-    const existing = (await readJsonFile(hooksJsonPath)) || { version: 1, hooks: {} };
-    if (!existing.version) existing.version = 1;
-    if (!existing.hooks) existing.hooks = {};
-    if (!existing.hooks.postToolUse) existing.hooks.postToolUse = [];
+    const parsed = await (async () => {
+      try {
+        const r = await fs.readFile(hooksJsonPath, 'utf-8');
+        return parseJsonc(r);
+      } catch {
+        return null;
+      }
+    })();
 
-    const hasHook = existing.hooks.postToolUse.some(
-      (h: { command?: string }) => h.command?.includes('gitnexus-hook'),
-    );
-
-    if (!hasHook) {
-      existing.hooks.postToolUse.push({
-        command: hookCmd,
-        matcher: 'Shell|Grep',
-        timeout: 10,
-      });
+    if (hasCursorGitnexusPostToolUse(parsed)) {
+      result.configured.push('Cursor hooks (already configured)');
+      return;
     }
 
-    await writeJsonFile(hooksJsonPath, existing);
+    const hookEntry = {
+      command: hookCmd,
+      matcher: 'Shell|Grep',
+      timeout: 10,
+    };
+
+    let raw = '';
+    try {
+      raw = await fs.readFile(hooksJsonPath, 'utf-8');
+    } catch {
+      raw = '';
+    }
+
+    let ok: boolean;
+    if (raw.trim().length === 0) {
+      await fs.mkdir(path.dirname(hooksJsonPath), { recursive: true });
+      const seed = {
+        version: 1,
+        hooks: { postToolUse: [hookEntry] },
+      };
+      await fs.writeFile(hooksJsonPath, JSON.stringify(seed, null, 2) + '\n', 'utf-8');
+      ok = true;
+    } else {
+      ok = await mergeHooksJsonc(hooksJsonPath, [{ eventName: 'postToolUse', value: hookEntry }]);
+    }
+
+    if (!ok) {
+      result.errors.push(
+        'Cursor hooks: hooks.json is corrupt — skipping to preserve existing content',
+      );
+      return;
+    }
+
+    if (parsed && (parsed as { version?: unknown }).version == null) {
+      await mergeJsoncFile(hooksJsonPath, ['version'], 1);
+    }
+
     result.configured.push('Cursor hooks (postToolUse)');
   } catch (err: any) {
     result.errors.push(`Cursor hooks: ${err.message}`);
@@ -524,9 +574,8 @@ async function setupCodex(result: SetupResult): Promise<void> {
 
   try {
     const entry = getMcpEntry();
-    await execFileAsync('codex', ['mcp', 'add', 'gitnexus', '--', entry.command, ...entry.args], {
-      shell: process.platform === 'win32',
-    });
+    // Avoid shell: true + args (Node DEP0190); PATH resolves codex / codex.cmd on Windows.
+    await execFileAsync('codex', ['mcp', 'add', 'gitnexus', '--', entry.command, ...entry.args]);
     result.configured.push('Codex');
     return;
   } catch {
