@@ -62,7 +62,7 @@ Commands and gotchas live under **Repo reference** below and in **[CONTRIBUTING.
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **GitNexus** (26675 symbols, 35395 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **GitNexus-Cursor** (23478 symbols, 31024 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -85,41 +85,63 @@ This project is indexed by GitNexus as **GitNexus** (26675 symbols, 35395 relati
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/GitNexus/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/GitNexus/clusters` | All functional areas |
-| `gitnexus://repo/GitNexus/processes` | All execution flows |
-| `gitnexus://repo/GitNexus/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/GitNexus-Cursor/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/GitNexus-Cursor/clusters` | All functional areas |
+| `gitnexus://repo/GitNexus-Cursor/processes` | All execution flows |
+| `gitnexus://repo/GitNexus-Cursor/process/{name}` | Step-by-step execution trace |
+
+## Self-Check Before Finishing
+
+Before completing any code modification task, verify:
+1. `gitnexus_impact` was run for all modified symbols
+2. No HIGH/CRITICAL risk warnings were ignored
+3. `gitnexus_detect_changes()` confirms changes match expected scope
+4. All d=1 (WILL BREAK) dependents were updated
+
+## Keeping the Index Fresh
+
+After committing code changes, the GitNexus index becomes stale. Re-run analyze to update it:
+
+```bash
+npx gitnexus analyze                 # basic refresh; preserves any existing embeddings
+npx gitnexus analyze --embeddings    # also generate embeddings for new/changed nodes
+npx gitnexus analyze --drop-embeddings  # explicit opt-in to wipe existing embeddings
+```
+
+Check `.gitnexus/meta.json` `stats.embeddings` (0 = none). A plain `analyze` no longer drops existing vectors — pass `--drop-embeddings` to wipe.
+
+> **Claude Code:** PostToolUse hook detects a stale index after `git commit` and `git merge` and prompts the agent to run `analyze`. The hook does not invoke `analyze` itself. **Cursor:** use the GitNexus Cursor hook (`gitnexus/hooks/cursor/gitnexus-hook.cjs`) for similar automation after `git commit` and `git merge`.
 
 ## CLI
 
 | Task | Read this skill file |
 |------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Ingestion area (239 symbols) | `.claude/skills/generated/ingestion/SKILL.md` |
-| Work in the Extractors area (135 symbols) | `.claude/skills/generated/extractors/SKILL.md` |
-| Work in the Components area (112 symbols) | `.claude/skills/generated/components/SKILL.md` |
-| Work in the Lbug area (96 symbols) | `.claude/skills/generated/lbug/SKILL.md` |
-| Work in the Group area (94 symbols) | `.claude/skills/generated/group/SKILL.md` |
-| Work in the Cli area (92 symbols) | `.claude/skills/generated/cli/SKILL.md` |
-| Work in the Configs area (92 symbols) | `.claude/skills/generated/configs/SKILL.md` |
-| Work in the Type-extractors area (90 symbols) | `.claude/skills/generated/type-extractors/SKILL.md` |
-| Work in the Hooks area (88 symbols) | `.claude/skills/generated/hooks/SKILL.md` |
-| Work in the Unit area (80 symbols) | `.claude/skills/generated/unit/SKILL.md` |
-| Work in the Cpp area (73 symbols) | `.claude/skills/generated/cpp/SKILL.md` |
-| Work in the Scope-resolution area (72 symbols) | `.claude/skills/generated/scope-resolution/SKILL.md` |
-| Work in the Server area (66 symbols) | `.claude/skills/generated/server/SKILL.md` |
-| Work in the Local area (61 symbols) | `.claude/skills/generated/local/SKILL.md` |
-| Work in the Wiki area (60 symbols) | `.claude/skills/generated/wiki/SKILL.md` |
-| Work in the Workers area (57 symbols) | `.claude/skills/generated/workers/SKILL.md` |
-| Work in the Embeddings area (56 symbols) | `.claude/skills/generated/embeddings/SKILL.md` |
-| Work in the Typescript area (53 symbols) | `.claude/skills/generated/typescript/SKILL.md` |
-| Work in the Storage area (51 symbols) | `.claude/skills/generated/storage/SKILL.md` |
-| Work in the Php area (48 symbols) | `.claude/skills/generated/php/SKILL.md` |
+| Understand architecture / "How does X work?" | `.cursor/skills/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.cursor/skills/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.cursor/skills/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.cursor/skills/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.cursor/skills/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.cursor/skills/gitnexus-cli/SKILL.md` |
+| Work in the Ingestion area (311 symbols) | `.cursor/skills/ingestion/SKILL.md` |
+| Work in the Type-extractors area (112 symbols) | `.cursor/skills/type-extractors/SKILL.md` |
+| Work in the Cli area (93 symbols) | `.cursor/skills/cli/SKILL.md` |
+| Work in the Group area (88 symbols) | `.cursor/skills/group/SKILL.md` |
+| Work in the Configs area (78 symbols) | `.cursor/skills/configs/SKILL.md` |
+| Work in the Wiki area (67 symbols) | `.cursor/skills/wiki/SKILL.md` |
+| Work in the Server area (69 symbols) | `.cursor/skills/server/SKILL.md` |
+| Work in the Local area (61 symbols) | `.cursor/skills/local/SKILL.md` |
+| Work in the Components area (63 symbols) | `.cursor/skills/components/SKILL.md` |
+| Work in the Embeddings area (55 symbols) | `.cursor/skills/embeddings/SKILL.md` |
+| Work in the Scope-resolution area (55 symbols) | `.cursor/skills/scope-resolution/SKILL.md` |
+| Work in the Extractors area (52 symbols) | `.cursor/skills/extractors/SKILL.md` |
+| Work in the Workers area (40 symbols) | `.cursor/skills/workers/SKILL.md` |
+| Work in the Lbug area (50 symbols) | `.cursor/skills/lbug/SKILL.md` |
+| Work in the Unit area (50 symbols) | `.cursor/skills/unit/SKILL.md` |
+| Work in the Hooks area (39 symbols) | `.cursor/skills/hooks/SKILL.md` |
+| Work in the Csharp area (38 symbols) | `.cursor/skills/csharp/SKILL.md` |
+| Work in the Services area (36 symbols) | `.cursor/skills/services/SKILL.md` |
+| Work in the Cobol area (34 symbols) | `.cursor/skills/cobol/SKILL.md` |
+| Work in the Storage area (32 symbols) | `.cursor/skills/storage/SKILL.md` |
 
 <!-- gitnexus:end -->
 

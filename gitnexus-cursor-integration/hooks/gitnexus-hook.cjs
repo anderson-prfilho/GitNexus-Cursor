@@ -20,11 +20,16 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { acquireHookSlot } = require('./hook-lock.cjs');
 
+// Kill the process if stdin hangs (subagent contexts may not close stdin).
+const STDIN_TIMEOUT = setTimeout(() => process.exit(0), 8000);
+
 function readInput() {
   try {
-    const data = fs.readFileSync(0, 'utf-8');
+    const data = fs.readFileSync(0, 'utf-8').replace(/^\uFEFF/, '');
+    clearTimeout(STDIN_TIMEOUT);
     return JSON.parse(data);
   } catch {
+    clearTimeout(STDIN_TIMEOUT);
     return {};
   }
 }

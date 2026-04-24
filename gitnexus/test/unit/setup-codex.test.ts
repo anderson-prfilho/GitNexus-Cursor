@@ -66,7 +66,7 @@ describe('setupCommand codex execution', () => {
     await fs.rm(tempHome, { recursive: true, force: true });
   });
 
-  it('invokes codex mcp add with shell enabled on Windows', async () => {
+  it('invokes codex mcp add on Windows without shell (avoids Node DEP0190)', async () => {
     const { setupCommand } = await import('../../src/cli/setup.js');
 
     await setupCommand();
