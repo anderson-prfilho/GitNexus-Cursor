@@ -67,7 +67,10 @@ describe('extractParsedFile', () => {
   });
 
   describe('provider HAS migrated', () => {
-    it('returns undefined without warning for whitespace-only source', () => {
+    it('returns undefined without warning for empty or whitespace-only source', () => {
+      // Zero-length or whitespace-only sources (e.g. empty __init__.py) have no
+      // constructs; the bridge short-circuits before calling the hook to avoid
+      // noisy ScopeExtractor warnings.
       const warnings: string[] = [];
       let called = false;
       const provider = fakeProvider({

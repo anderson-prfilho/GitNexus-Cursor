@@ -47,6 +47,9 @@ export function extractParsedFile(
   sourceKind: ScopeCaptureSourceKind = 'full-file',
 ): ParsedFile | undefined {
   if (provider.emitScopeCaptures === undefined) return undefined;
+  // Empty / whitespace-only files have no constructs to extract; a zero-byte
+  // source produces a zero-range module node that the ScopeExtractor rejects
+  // as having no Module scope (see python-fixtures.test.ts case 01 comment).
   if (sourceText.trim().length === 0) return undefined;
   try {
     const captures = provider.emitScopeCaptures(sourceText, filePath, cachedTree, { sourceKind });
