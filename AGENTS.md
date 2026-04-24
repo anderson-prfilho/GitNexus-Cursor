@@ -62,91 +62,45 @@ Commands and gotchas live under **Repo reference** below and in **[CONTRIBUTING.
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-Indexed as **GitNexus** (4325 symbols, 10556 relationships, 300 execution flows). Use MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **GitNexus-Cursor** (18796 symbols, 26268 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
-> If any tool warns the index is stale, run `npx gitnexus analyze` first.
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** `gitnexus_impact({target: "symbolName", direction: "upstream"})` — report blast radius to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** — verify only expected symbols and flows are affected.
-- **MUST warn the user** if impact returns HIGH or CRITICAL risk.
-- Explore unfamiliar code with `gitnexus_query({query: "concept"})` (process-grouped, ranked) instead of grepping.
-- Full context on a symbol: `gitnexus_context({name: "symbolName"})`.
-
-## When Debugging
-
-1. `gitnexus_query({query: "<error or symptom>"})` — find related execution flows
-2. `gitnexus_context({name: "<suspect function>"})` — callers, callees, process participation
-3. `READ gitnexus://repo/GitNexus/process/{processName}` — trace flow step by step
-4. Regressions: `gitnexus_detect_changes({scope: "compare", base_ref: "main"})`
-
-## When Refactoring
-
-- **Rename:** `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` first. Graph edits are safe; text_search edits need manual review.
-- **Extract/Split:** `gitnexus_context` (incoming/outgoing refs) then `gitnexus_impact` (upstream callers) before moving code.
-- **After any refactor:** `gitnexus_detect_changes({scope: "all"})` to verify scope.
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
 
 ## Never Do
 
-- Edit a symbol without running `gitnexus_impact` first.
-- Ignore HIGH/CRITICAL risk warnings.
-- Rename with find-and-replace — use `gitnexus_rename`.
-- Commit without `gitnexus_detect_changes()`.
-- Add language-specific behavior to shared ingestion code (`gitnexus/src/core/ingestion/`) — use a `LanguageProvider` hook. Seeing `provider.mroStrategy === 'xxx'` or an import from `languages/xxx.ts` in shared code means stop and add a hook.
-
-## Tools Quick Reference
-
-| Tool | When to use | Example |
-|------|-------------|---------|
-| `list_repos` | Discover indexed repos | `gitnexus_list_repos({})` |
-| `query` | Find code by concept | `gitnexus_query({query: "auth validation"})` |
-| `context` | 360-degree view of one symbol | `gitnexus_context({name: "validateUser"})` |
-| `impact` | Blast radius before editing | `gitnexus_impact({target: "X", direction: "upstream"})` |
-| `detect_changes` | Pre-commit scope check | `gitnexus_detect_changes({scope: "staged"})` |
-| `rename` | Safe multi-file rename | `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` |
-| `cypher` | Custom graph queries | `gitnexus_cypher({query: "MATCH ..."})` |
-| `api_impact` | Pre-change API route impact | `gitnexus_api_impact({route: "/api/users", method: "GET"})` |
-| `route_map` | Route → handler → consumer map | `gitnexus_route_map({})` |
-| `tool_map` | MCP/RPC tool definitions | `gitnexus_tool_map({})` |
-| `shape_check` | Response shape vs consumer access | `gitnexus_shape_check({route: "/api/users"})` |
-| `group_list` | List repo groups | `gitnexus_group_list({})` |
-| `group_sync` | Rebuild group Contract Registry | `gitnexus_group_sync({name: "myGroup"})` |
-| `query` (group mode) | Cross-repo search in a group (RRF-merged) | `gitnexus_query({repo: "@myGroup", query: "auth"})` |
-| `context` (group mode) | 360° view across all member repos | `gitnexus_context({repo: "@myGroup", name: "validateUser"})` |
-| `impact` (group mode) | Cross-repo blast radius via Contract Bridge | `gitnexus_impact({repo: "@myGroup", target: "X", direction: "upstream"})` |
-
-> Group mode: pass `repo: "@<groupName>"` to fan out across all member repos, or `repo: "@<groupName>/<memberPath>"` to target a single member (path keys from `group.yaml`). Optional `service: "<monorepo/path>"` filters by service root. Group-level state (contracts, staleness) lives in the resources table below — there are **no** `group_query` / `group_context` / `group_impact` / `group_contracts` / `group_status` MCP tools.
->
-> For a full walkthrough of setting up a group across multiple repos that communicate over gRPC, see [docs/guides/microservices-grpc.md](docs/guides/microservices-grpc.md).
-
-## Impact Risk Levels
-
-| Depth | Meaning | Action |
-|-------|---------|--------|
-| d=1 | WILL BREAK — direct callers/importers | MUST update |
-| d=2 | LIKELY AFFECTED — indirect deps | Should test |
-| d=3 | MAY NEED TESTING — transitive | Test if critical path |
+- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
+- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
 
 ## Resources
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/GitNexus/context` | Codebase overview, index freshness |
-| `gitnexus://repo/GitNexus/clusters` | All functional areas |
-| `gitnexus://repo/GitNexus/processes` | All execution flows |
-| `gitnexus://repo/GitNexus/process/{name}` | Step-by-step execution trace |
-| `gitnexus://group/{name}/contracts` | Group Contract Registry (provider/consumer rows + cross-links) |
-| `gitnexus://group/{name}/status` | Per-member index + Contract Registry staleness report |
+| `gitnexus://repo/GitNexus-Cursor/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/GitNexus-Cursor/clusters` | All functional areas |
+| `gitnexus://repo/GitNexus-Cursor/processes` | All execution flows |
+| `gitnexus://repo/GitNexus-Cursor/process/{name}` | Step-by-step execution trace |
 
 ## Self-Check Before Finishing
 
+Before completing any code modification task, verify:
 1. `gitnexus_impact` was run for all modified symbols
-2. No HIGH/CRITICAL warnings were ignored
-3. `gitnexus_detect_changes()` confirms expected scope
-4. All d=1 dependents were updated
+2. No HIGH/CRITICAL risk warnings were ignored
+3. `gitnexus_detect_changes()` confirms changes match expected scope
+4. All d=1 (WILL BREAK) dependents were updated
 
 ## Keeping the Index Fresh
+
+After committing code changes, the GitNexus index becomes stale. Re-run analyze to update it:
 
 ```bash
 npx gitnexus analyze                 # basic refresh; preserves any existing embeddings
@@ -156,18 +110,38 @@ npx gitnexus analyze --drop-embeddings  # explicit opt-in to wipe existing embed
 
 Check `.gitnexus/meta.json` `stats.embeddings` (0 = none). A plain `analyze` no longer drops existing vectors — pass `--drop-embeddings` to wipe.
 
-> Claude Code: PostToolUse hook detects a stale index after `git commit` and `git merge` and prompts the agent to run `analyze`. The hook does not invoke `analyze` itself.
+> **Claude Code:** PostToolUse hook detects a stale index after `git commit` and `git merge` and prompts the agent to run `analyze`. The hook does not invoke `analyze` itself. **Cursor:** use the GitNexus Cursor hook (`gitnexus/hooks/cursor/gitnexus-hook.cjs`) for similar automation after `git commit` and `git merge`.
 
-## CLI Skills
+## CLI
 
-| Task | Skill file |
-|------|-----------|
-| Architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Debugging / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Refactoring | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools/resources/schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| CLI commands (index, status, clean, wiki) | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.cursor/skills/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.cursor/skills/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.cursor/skills/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.cursor/skills/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.cursor/skills/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.cursor/skills/gitnexus-cli/SKILL.md` |
+| Work in the Ingestion area (297 symbols) | `.cursor/skills/ingestion/SKILL.md` |
+| Work in the Type-extractors area (113 symbols) | `.cursor/skills/type-extractors/SKILL.md` |
+| Work in the Cli area (92 symbols) | `.cursor/skills/cli/SKILL.md` |
+| Work in the Group area (88 symbols) | `.cursor/skills/group/SKILL.md` |
+| Work in the Configs area (77 symbols) | `.cursor/skills/configs/SKILL.md` |
+| Work in the Wiki area (69 symbols) | `.cursor/skills/wiki/SKILL.md` |
+| Work in the Server area (65 symbols) | `.cursor/skills/server/SKILL.md` |
+| Work in the Local area (61 symbols) | `.cursor/skills/local/SKILL.md` |
+| Work in the Components area (59 symbols) | `.cursor/skills/components/SKILL.md` |
+| Work in the Embeddings area (58 symbols) | `.cursor/skills/embeddings/SKILL.md` |
+| Work in the Scope-resolution area (53 symbols) | `.cursor/skills/scope-resolution/SKILL.md` |
+| Work in the Extractors area (52 symbols) | `.cursor/skills/extractors/SKILL.md` |
+| Work in the Workers area (51 symbols) | `.cursor/skills/workers/SKILL.md` |
+| Work in the Lbug area (49 symbols) | `.cursor/skills/lbug/SKILL.md` |
+| Work in the Unit area (48 symbols) | `.cursor/skills/unit/SKILL.md` |
+| Work in the Hooks area (39 symbols) | `.cursor/skills/hooks/SKILL.md` |
+| Work in the Python area (37 symbols) | `.cursor/skills/python/SKILL.md` |
+| Work in the Services area (36 symbols) | `.cursor/skills/services/SKILL.md` |
+| Work in the Cobol area (34 symbols) | `.cursor/skills/cobol/SKILL.md` |
+| Work in the Storage area (32 symbols) | `.cursor/skills/storage/SKILL.md` |
 
 <!-- gitnexus:end -->
 
