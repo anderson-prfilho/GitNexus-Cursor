@@ -6,7 +6,7 @@
  */
 
 import { pipeline, env, type FeatureExtractionPipeline } from '@huggingface/transformers';
-import os from 'os';
+import { homedir } from 'os';
 import { join } from 'path';
 import {
   isHttpMode,
@@ -49,7 +49,11 @@ export const initEmbedder = async (): Promise<FeatureExtractionPipeline> => {
       // ./node_modules/.cache inside its own install dir, which is unwritable
       // when gitnexus is installed globally (e.g. /usr/lib/node_modules/).
       // Respect HF_HOME if set, otherwise fall back to ~/.cache/huggingface.
-      env.cacheDir = process.env.HF_HOME ?? join(os.homedir(), '.cache', 'huggingface');
+      // Use homedir() instead of process.env.HOME — on Windows HOME is
+      // undefined (Windows uses USERPROFILE), which produced a literal
+      // "undefined/.cache/huggingface" path and a stray "undefined" folder
+      // under the current working directory.
+      env.cacheDir = process.env.HF_HOME ?? join(homedir(), '.cache', 'huggingface');
       const embeddingConfig = resolveEmbeddingConfig();
 
       console.error('GitNexus: Loading embedding model (first search may take a moment)...');

@@ -38,6 +38,9 @@ export function emitPythonScopeCaptures(
   // here at the use site.
   let tree = cachedTree as ReturnType<ReturnType<typeof getPythonParser>['parse']> | undefined;
   if (tree === undefined) {
+    // Use the same adaptive buffer size as the main parse worker so large
+    // Python files (e.g. ETL scripts > 30 KB) don't hit the 32 KB default
+    // read-buffer limit and produce "Invalid argument" from the native binding.
     tree = getPythonParser().parse(sourceText, undefined, {
       bufferSize: getTreeSitterBufferSize(sourceText),
     });
