@@ -303,8 +303,12 @@ export const embedText = async (text: string): Promise<Float32Array> => {
 
   const embedder = getEmbedder();
 
+  // pooling: 'cls' — Snowflake Arctic Embed family is trained with CLS-token
+  // pooling. Using 'mean' here silently degrades retrieval quality by 3-5
+  // MTEB points. See model card:
+  //   https://huggingface.co/Snowflake/snowflake-arctic-embed-xs#using-transformersjs
   const result = await embedder(text, {
-    pooling: 'mean',
+    pooling: 'cls',
     normalize: true,
   });
 
@@ -330,9 +334,12 @@ export const embedBatch = async (texts: string[]): Promise<Float32Array[]> => {
 
   const embedder = getEmbedder();
 
-  // Process batch
+  // pooling: 'cls' — Snowflake Arctic Embed family is trained with CLS-token
+  // pooling. Using 'mean' here silently degrades retrieval quality by 3-5
+  // MTEB points. See model card:
+  //   https://huggingface.co/Snowflake/snowflake-arctic-embed-xs#using-transformersjs
   const result = await embedder(texts, {
-    pooling: 'mean',
+    pooling: 'cls',
     normalize: true,
   });
 

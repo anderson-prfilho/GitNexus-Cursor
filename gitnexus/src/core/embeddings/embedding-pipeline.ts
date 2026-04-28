@@ -61,8 +61,15 @@ const ensureVectorExtensionAvailable = async (): Promise<boolean> => {
  * Bump this when the embedding text template changes in a way that should
  * invalidate existing vectors, such as metadata/header shape changes,
  * structural container context changes, or preceding-context formatting rules.
+ *
+ * Also bump when the inference-time pooling/normalization changes — pooling
+ * is not part of the embedded text, but the resulting vector geometry is
+ * different and old vectors must not be reused.
+ *
+ * v3: switched pooling from 'mean' to 'cls' (Snowflake Arctic Embed family
+ *     was trained with CLS-token pooling).
  */
-export const EMBEDDING_TEXT_VERSION = 'v2';
+export const EMBEDDING_TEXT_VERSION = 'v3';
 
 /**
  * Compute a stable content fingerprint for an embeddable node.
