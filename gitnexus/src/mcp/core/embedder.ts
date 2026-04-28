@@ -118,8 +118,13 @@ export const embedQuery = async (query: string): Promise<number[]> => {
 
   const embedder = await initEmbedder();
 
+  // pooling: 'cls' — Snowflake Arctic Embed family is trained with CLS-token
+  // pooling. Using 'mean' here silently degrades retrieval quality by 3-5
+  // MTEB points. Must match the pooling used by the indexing pipeline
+  // (gitnexus/src/core/embeddings/embedder.ts) — otherwise queries and
+  // documents end up in slightly misaligned subspaces.
   const result = await embedder(query, {
-    pooling: 'mean',
+    pooling: 'cls',
     normalize: true,
   });
 
