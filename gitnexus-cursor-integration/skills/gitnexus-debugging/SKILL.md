@@ -1,11 +1,12 @@
 ---
 name: gitnexus-debugging
-description: Trace bugs through call chains using knowledge graph
+description: "Use when the user is debugging a bug, tracing an error, or asking why something fails. Examples: \"Why is X failing?\", \"Where does this error come from?\", \"Trace this bug\""
 ---
 
 # Debugging with GitNexus
 
 ## When to Use
+
 - "Why is this function failing?"
 - "Trace where this error comes from"
 - "Who calls this method?"
@@ -49,6 +50,7 @@ description: Trace bugs through call chains using knowledge graph
 ## Tools
 
 **query** — find code related to error:
+
 ```
 query({search_query: "payment validation error"})
 → Processes: CheckoutFlow, ErrorHandling
@@ -56,6 +58,7 @@ query({search_query: "payment validation error"})
 ```
 
 **context** — full context for a suspect:
+
 ```
 context({name: "validatePayment"})
 → Incoming calls: processCheckout, webhookHandler
@@ -64,6 +67,7 @@ context({name: "validatePayment"})
 ```
 
 **cypher** — custom call chain traces:
+
 ```cypher
 MATCH path = (a)-[:CodeRelation {type: 'CALLS'}*1..2]->(b:Function {name: "validatePayment"})
 RETURN [n IN nodes(path) | n.name] AS chain
