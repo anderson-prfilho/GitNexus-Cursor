@@ -65,8 +65,8 @@ interface UseSigmaOptions {
 }
 
 interface UseSigmaReturn {
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  sigmaRef: React.RefObject<Sigma | null>;
+  containerRef: React.RefObject<HTMLDivElement>;
+  sigmaRef: React.RefObject<Sigma>;
   setGraph: (graph: Graph<SigmaNodeAttributes, SigmaEdgeAttributes>) => void;
   zoomIn: () => void;
   zoomOut: () => void;
