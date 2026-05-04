@@ -116,7 +116,8 @@ program
   )
   .option(
     '--worker-timeout <seconds>',
-    'Worker sub-batch idle timeout before retry/fallback. Default: 30.',
+    'Worker sub-batch idle timeout before retry/fallback. Default: 300 ' +
+      '(elevated to avoid Windows STATUS_STACK_BUFFER_OVERRUN on slow tree-sitter / scope-resolution stalls).',
   )
   .option(
     '--wal-checkpoint-threshold <bytes>',
