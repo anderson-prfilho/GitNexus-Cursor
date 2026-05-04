@@ -53,7 +53,8 @@ program
   )
   .option(
     '--worker-timeout <seconds>',
-    'Worker sub-batch idle timeout before retry/fallback. Default: 30.',
+    'Worker sub-batch idle timeout before retry/fallback. Default: 300 ' +
+      '(elevated to avoid Windows STATUS_STACK_BUFFER_OVERRUN on slow tree-sitter / scope-resolution stalls).',
   )
   .option('--embedding-threads <n>', 'Limit local ONNX embedding CPU threads')
   .option('--embedding-batch-size <n>', 'Number of nodes per embedding batch')
@@ -64,7 +65,7 @@ program
     '\nEnvironment variables:\n' +
       '  GITNEXUS_NO_GITIGNORE=1   Skip .gitignore parsing (still reads .gitnexusignore)\n' +
       '  GITNEXUS_MAX_FILE_SIZE=N  Override large-file skip threshold (KB). Default 512, max 32768.\n' +
-      '  GITNEXUS_WORKER_SUB_BATCH_TIMEOUT_MS=N  Worker idle timeout in milliseconds. Default 30000.\n' +
+      '  GITNEXUS_WORKER_SUB_BATCH_TIMEOUT_MS=N  Worker idle timeout in milliseconds. Default 300000.\n' +
       '  GITNEXUS_WORKER_SUB_BATCH_MAX_BYTES=N  Worker job byte budget. Default 8388608.\n' +
       '  GITNEXUS_EMBEDDING_THREADS=N  Limit local ONNX CPU threads for --embeddings.\n' +
       '  GITNEXUS_SEMANTIC_EXACT_SCAN_LIMIT=N  Max embedding chunks for exact-scan fallback. Default 10000.\n' +

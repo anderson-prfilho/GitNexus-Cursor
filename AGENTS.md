@@ -62,7 +62,7 @@ Commands and gotchas live under **Repo reference** below and in **[CONTRIBUTING.
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **GitNexus-Cursor** (19305 symbols, 26941 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **GitNexus-Cursor** (23478 symbols, 31024 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -114,7 +114,7 @@ npx gitnexus analyze --embeddings
 
 To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.embeddings` field shows the count (0 means no embeddings). **Running analyze without `--embeddings` will delete any previously generated embeddings.**
 
-> **Claude Code:** PostToolUse hook detects a stale index after `git commit` and `git merge` and prompts the agent to run `analyze`. The hook does not invoke `analyze` itself. **Cursor:** use the GitNexus Cursor hook (`gitnexus/hooks/cursor/gitnexus-hook.cjs`) for similar automation after `git commit` and `git merge`.
+> Claude Code and Cursor users: A PostToolUse hook handles this automatically after `git commit` and `git merge`.
 
 ## CLI
 
@@ -126,26 +126,6 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.cursor/skills/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.cursor/skills/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.cursor/skills/gitnexus-cli/SKILL.md` |
-| Work in the Ingestion area (311 symbols) | `.cursor/skills/ingestion/SKILL.md` |
-| Work in the Type-extractors area (112 symbols) | `.cursor/skills/type-extractors/SKILL.md` |
-| Work in the Cli area (93 symbols) | `.cursor/skills/cli/SKILL.md` |
-| Work in the Group area (88 symbols) | `.cursor/skills/group/SKILL.md` |
-| Work in the Configs area (78 symbols) | `.cursor/skills/configs/SKILL.md` |
-| Work in the Server area (69 symbols) | `.cursor/skills/server/SKILL.md` |
-| Work in the Wiki area (67 symbols) | `.cursor/skills/wiki/SKILL.md` |
-| Work in the Components area (63 symbols) | `.cursor/skills/components/SKILL.md` |
-| Work in the Local area (61 symbols) | `.cursor/skills/local/SKILL.md` |
-| Work in the Scope-resolution area (55 symbols) | `.cursor/skills/scope-resolution/SKILL.md` |
-| Work in the Embeddings area (55 symbols) | `.cursor/skills/embeddings/SKILL.md` |
-| Work in the Extractors area (52 symbols) | `.cursor/skills/extractors/SKILL.md` |
-| Work in the Unit area (50 symbols) | `.cursor/skills/unit/SKILL.md` |
-| Work in the Lbug area (50 symbols) | `.cursor/skills/lbug/SKILL.md` |
-| Work in the Workers area (40 symbols) | `.cursor/skills/workers/SKILL.md` |
-| Work in the Hooks area (39 symbols) | `.cursor/skills/hooks/SKILL.md` |
-| Work in the Csharp area (38 symbols) | `.cursor/skills/csharp/SKILL.md` |
-| Work in the Services area (36 symbols) | `.cursor/skills/services/SKILL.md` |
-| Work in the Cobol area (34 symbols) | `.cursor/skills/cobol/SKILL.md` |
-| Work in the Storage area (32 symbols) | `.cursor/skills/storage/SKILL.md` |
 
 <!-- gitnexus:end -->
 

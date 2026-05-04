@@ -57,7 +57,24 @@ interface WorkerJobResult<TResult> {
 const SUB_BATCH_SIZE = 1500;
 const SUB_BATCH_MAX_BYTES = 8 * 1024 * 1024;
 
-const DEFAULT_SUB_BATCH_IDLE_TIMEOUT_MS = 30_000;
+/**
+ * Idle timeout before a sub-batch is split / retried. Default 300s.
+ *
+ * Why 300s and not 30s: on Windows, when a worker is parked inside a native
+ * binding (`tree-sitter-language.parse`, `Query.matches`, scope-resolution
+ * Ring 3 hooks) and the pool calls `worker.terminate()`, the V8 worker
+ * tear-down occasionally triggers `STATUS_STACK_BUFFER_OVERRUN`
+ * (NTSTATUS `0xC0000409`) instead of a clean exit, killing the analyze
+ * process with no actionable diagnostic. The lower-bound timeout therefore
+ * prefers waiting for the slow file to finish over racing the terminate
+ * path on a stalled worker. The split-and-retry contract is unchanged —
+ * truly stuck single-item jobs still surface a `parse job idle timeout`
+ * error and fall through to the sequential parser. Operators on
+ * predictable corpora can lower this via `--worker-timeout` /
+ * `GITNEXUS_WORKER_SUB_BATCH_TIMEOUT_MS` to recover the original 30s
+ * fail-fast behavior.
+ */
+const DEFAULT_SUB_BATCH_IDLE_TIMEOUT_MS = 300_000;
 const DEFAULT_TIMEOUT_RETRIES = 1;
 const DEFAULT_TIMEOUT_BACKOFF_FACTOR = 2;
 
