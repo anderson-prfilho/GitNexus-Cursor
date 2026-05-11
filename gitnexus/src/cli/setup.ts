@@ -1146,7 +1146,7 @@ export const setupCommand = async (options?: { codingAgent?: string[] | string }
   if (selected.has('opencode')) await setupOpenCode(result);
   if (selected.has('codex')) await setupCodex(result);
 
-  // Install global skills for platforms that support them
+  // Install global skills / hooks for platforms that support them
   if (selected.has('claude')) {
     await installClaudeCodeSkills(result);
     await installClaudeCodeHooks(result);
