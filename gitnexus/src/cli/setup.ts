@@ -233,39 +233,6 @@ async function setupClaudeCode(result: SetupResult): Promise<void> {
 }
 
 /**
- * Install GitNexus skills to ~/.claude/skills/ for Claude Code.
- */
-async function installClaudeCodeSkills(result: SetupResult): Promise<void> {
-  const claudeDir = path.join(os.homedir(), '.claude');
-  if (!(await dirExists(claudeDir))) return;
-
-  const skillsDir = path.join(claudeDir, 'skills');
-  try {
-    const installed = await installSkillsTo(skillsDir);
-    if (installed.length > 0) {
-      result.configured.push(`Claude Code skills (${installed.length} skills → ~/.claude/skills/)`);
-    }
-  } catch (err: any) {
-    result.errors.push(`Claude Code skills: ${err.message}`);
-  }
-}
-
-/**
- * Check whether an event array already contains a gitnexus-hook entry.
- */
-function hasGitnexusHook(hooksObj: any, eventName: string): boolean {
-  const entries = hooksObj?.[eventName];
-  if (!Array.isArray(entries)) return false;
-  return entries.some(
-    (h: any) =>
-      Array.isArray(h.hooks) &&
-      h.hooks.some(
-        (hh: any) => typeof hh.command === 'string' && hh.command.includes('gitnexus-hook'),
-      ),
-  );
-}
-
-/**
  * True when ~/.cursor/hooks.json already registers a GitNexus postToolUse hook
  * (Cursor uses a flat { command, matcher, timeout } shape per entry).
  */
@@ -813,9 +780,8 @@ export const setupCommand = async () => {
   await setupOpenCode(result);
   await setupCodex(result);
 
-  // Install global skills for platforms that support them
-  await installClaudeCodeSkills(result);
-  await installClaudeCodeHooks(result);
+  // Install global skills / hooks for platforms that support them (not ~/.claude —
+  // we only merge MCP into ~/.claude.json when that directory already exists).
   await installCursorHooks(result);
   await installCursorSkills(result);
   await installOpenCodeSkills(result);

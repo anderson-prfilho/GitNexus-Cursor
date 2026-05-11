@@ -93,7 +93,7 @@ export interface AnalyzeOptions {
   skipAgentsMd?: boolean;
   /** Omit volatile symbol/relationship counts from AGENTS.md and CLAUDE.md. */
   noStats?: boolean;
-  /** Skip installing standard GitNexus skill files to .claude/skills/gitnexus/. */
+  /** Skip installing standard GitNexus skill files under .cursor/skills/. */
   skipSkills?: boolean;
   /**
    * User-provided alias for the registry `name` (#829). When set,

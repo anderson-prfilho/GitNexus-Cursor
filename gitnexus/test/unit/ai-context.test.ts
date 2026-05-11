@@ -248,7 +248,7 @@ Old content here.
     await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
 
     // Should have installed skill files
-    const skillsDir = path.join(tmpDir, '.claude', 'skills', 'gitnexus');
+    const skillsDir = path.join(tmpDir, '.cursor', 'skills');
     try {
       const entries = await fs.readdir(skillsDir, { recursive: true });
       expect(entries.length).toBeGreaterThan(0);
@@ -257,12 +257,12 @@ Old content here.
     }
   });
 
-  it('does not create .claude/skills/gitnexus/ when skipSkills is true (#742)', async () => {
+  it('does not create .cursor/skills/ standard layout when skipSkills is true (#742)', async () => {
     // Regression guard for #742. The --skip-skills flag must prevent
     // installSkills() from writing the 6 standard skill dirs into the
     // analyzed repo. Per-test tmpdir so we start from a known-clean
     // slate — the shared tmpDir from beforeAll may already contain
-    // .claude/skills/gitnexus/ from an earlier test.
+    // .cursor/skills/ from an earlier test.
     const skipDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-ai-ctx-skip-skills-'));
     const skipStorage = path.join(skipDir, '.gitnexus');
     await fs.mkdir(skipStorage, { recursive: true });
@@ -277,10 +277,8 @@ Old content here.
         { skipSkills: true },
       );
 
-      expect(result.files).toContain('.claude/skills/gitnexus/ (skipped via --skip-skills)');
-      await expect(
-        fs.access(path.join(skipDir, '.claude', 'skills', 'gitnexus')),
-      ).rejects.toThrow();
+      expect(result.files).toContain('.cursor/skills/ (skipped via --skip-skills)');
+      await expect(fs.access(path.join(skipDir, '.cursor', 'skills'))).rejects.toThrow();
     } finally {
       await fs.rm(skipDir, { recursive: true, force: true });
     }
@@ -308,11 +306,11 @@ Old content here.
 
       expect(result.files).toContain('AGENTS.md (skipped via --skip-agents-md)');
       expect(result.files).toContain('CLAUDE.md (skipped via --skip-agents-md)');
-      expect(result.files).toContain('.claude/skills/gitnexus/ (skipped via --skip-skills)');
+      expect(result.files).toContain('.cursor/skills/ (skipped via --skip-skills)');
 
       await expect(fs.access(path.join(idxDir, 'AGENTS.md'))).rejects.toThrow();
       await expect(fs.access(path.join(idxDir, 'CLAUDE.md'))).rejects.toThrow();
-      await expect(fs.access(path.join(idxDir, '.claude', 'skills', 'gitnexus'))).rejects.toThrow();
+      await expect(fs.access(path.join(idxDir, '.cursor', 'skills'))).rejects.toThrow();
     } finally {
       await fs.rm(idxDir, { recursive: true, force: true });
     }
@@ -320,7 +318,7 @@ Old content here.
 
   it('omits standard skill references from AGENTS.md/CLAUDE.md when skipSkills is true (#742)', async () => {
     // The skills routing table in AGENTS.md/CLAUDE.md points agents at
-    // .claude/skills/gitnexus/*/SKILL.md files installed by installSkills().
+    // .cursor/skills/*/SKILL.md files installed by installSkills().
     // When --skip-skills suppresses that install but AGENTS.md/CLAUDE.md
     // are still written, the routing table must NOT name files that don't
     // exist — otherwise every agent load incurs 6 failed reads and the
