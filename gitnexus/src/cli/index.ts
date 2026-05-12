@@ -94,7 +94,7 @@ program
       'Does not suppress community skills from --skills (those are written under .cursor/skills/). ' +
       'Use --index-only to skip all AI-context file injection.',
   )
-  .option('--index-only', 'Pure index mode: skip all file injection (AGENTS.md, CLAUDE.md, skills)')
+  .option('--index-only', 'Pure index mode: skip all file injection (AGENTS.md, skills)')
   .option(
     '--skip-git',
     'Treat the provided path/cwd as the index root and skip parent git-root discovery',

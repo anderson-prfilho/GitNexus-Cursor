@@ -17,7 +17,7 @@ Commands below use `node .gitnexus/run.cjs <command>` — the project-local runn
 node .gitnexus/run.cjs analyze
 ```
 
-Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files.
+Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and updates `AGENTS.md` with the GitNexus context block.
 
 | Flag           | Effect                                                           |
 | -------------- | ---------------------------------------------------------------- |
