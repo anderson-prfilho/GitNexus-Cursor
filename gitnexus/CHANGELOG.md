@@ -4,6 +4,10 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Codex hooks** — `gitnexus setup` now installs a `PostToolUse` hook for Codex (`~/.codex/hooks/gitnexus/gitnexus-hook.cjs` + `~/.codex/hooks.json`) that augments `rg` / `grep` Bash results with graph context and flags stale indexes after `git commit / merge / rebase / cherry-pick / pull`. The installer also enables `[features] codex_hooks = true` in `~/.codex/config.toml` (existing `codex_hooks = false` is preserved). `SessionStart` is intentionally skipped — static session context is already shipped via `AGENTS.md`, and `PreToolUse` `additionalContext` is parsed but not implemented by Codex today.
+
 ## [1.6.5] - 2026-05-16
 
 ### Added

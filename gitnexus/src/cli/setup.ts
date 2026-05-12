@@ -565,6 +565,31 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
 }
 
 /**
+ * True when ~/.codex/hooks.json already registers a GitNexus PostToolUse hook.
+ *
+ * Codex shape differs from Cursor: each event holds an array of
+ * matcher groups `{ matcher, hooks: [{ type, command, ... }] }`, so we
+ * scan the inner `hooks` array (not the top-level group entries).
+ */
+function hasCodexGitnexusPostToolUse(parsed: unknown): boolean {
+  const hooks = (parsed as { hooks?: { PostToolUse?: unknown[] } } | null)?.hooks;
+  const entries = hooks?.PostToolUse;
+  if (!Array.isArray(entries)) return false;
+  return entries.some((group: unknown) => {
+    if (!group || typeof group !== 'object') return false;
+    const subHooks = (group as { hooks?: unknown[] }).hooks;
+    if (!Array.isArray(subHooks)) return false;
+    return subHooks.some(
+      (h: unknown) =>
+        h !== null &&
+        typeof h === 'object' &&
+        typeof (h as { command?: string }).command === 'string' &&
+        (h as { command: string }).command.includes('gitnexus-hook'),
+    );
+  });
+}
+
+/**
  * Build a TOML section for Codex MCP config (~/.codex/config.toml).
  */
 function getCodexMcpTomlSection(): string {
@@ -619,6 +644,154 @@ async function setupCodex(result: SetupResult): Promise<void> {
     result.configured.push('Codex (MCP added to ~/.codex/config.toml)');
   } catch (err: any) {
     result.errors.push(`Codex: ${err.message}`);
+  }
+}
+
+/**
+ * Ensure `[features] codex_hooks = true` exists in ~/.codex/config.toml.
+ * Codex gates hooks behind this feature flag (per the public docs), so
+ * installing the script without flipping the flag would be a no-op.
+ *
+ * Conservative: if any `codex_hooks = ...` line already exists (true OR
+ * false), this respects the user's setting and does nothing — never
+ * overrides an explicit decision.
+ */
+async function ensureCodexHooksFeatureFlag(configPath: string): Promise<boolean> {
+  let existing = '';
+  try {
+    existing = await fs.readFile(configPath, 'utf-8');
+  } catch {
+    existing = '';
+  }
+
+  // Strip a UTF-8 BOM if the user happened to save config.toml with one
+  // (rare, but Windows tools like Notepad add it by default and `^` in the
+  // multiline regex below would otherwise miss the first line).
+  if (existing.charCodeAt(0) === 0xfeff) {
+    existing = existing.slice(1);
+  }
+
+  if (/^\s*codex_hooks\s*=/m.test(existing)) {
+    return /^\s*codex_hooks\s*=\s*true\b/m.test(existing);
+  }
+
+  await fs.mkdir(path.dirname(configPath), { recursive: true });
+
+  let next: string;
+  const featuresMatch = existing.match(/^\[features\][ \t]*\r?\n/m);
+  if (featuresMatch && typeof featuresMatch.index === 'number') {
+    const insertAt = featuresMatch.index + featuresMatch[0].length;
+    next = existing.slice(0, insertAt) + 'codex_hooks = true\n' + existing.slice(insertAt);
+  } else {
+    const section = '[features]\ncodex_hooks = true\n';
+    next = existing.trim().length > 0 ? `${existing.trimEnd()}\n\n${section}` : section;
+  }
+
+  await fs.writeFile(configPath, next.trimEnd() + '\n', 'utf-8');
+  return true;
+}
+
+/**
+ * Install GitNexus hooks to ~/.codex/hooks.json for Codex.
+ *
+ * The script is copied (with the CLI path baked in) to
+ * ~/.codex/hooks/gitnexus/gitnexus-hook.cjs and registered as a
+ * `PostToolUse` handler with matcher `Bash`. `PreToolUse` is intentionally
+ * NOT used because Codex parses but does not yet honor `additionalContext`
+ * on that event ("fail open" per docs). `SessionStart` is also skipped —
+ * AGENTS.md already covers static, session-level context.
+ */
+async function installCodexHooks(result: SetupResult): Promise<void> {
+  const codexDir = path.join(os.homedir(), '.codex');
+  if (!(await dirExists(codexDir))) return;
+
+  const pluginHooksPath = path.join(__dirname, '..', '..', 'hooks', 'codex');
+  const destHooksDir = path.join(codexDir, 'hooks', 'gitnexus');
+
+  try {
+    await fs.mkdir(destHooksDir, { recursive: true });
+
+    const src = path.join(pluginHooksPath, 'gitnexus-hook.cjs');
+    const dest = path.join(destHooksDir, 'gitnexus-hook.cjs');
+    try {
+      let content = await fs.readFile(src, 'utf-8');
+      const resolvedCli = path.join(__dirname, '..', 'cli', 'index.js');
+      const normalizedCli = path.resolve(resolvedCli).replace(/\\/g, '/');
+      const jsonCli = JSON.stringify(normalizedCli);
+      content = content.replace(
+        "let cliPath = path.resolve(__dirname, '..', '..', 'dist', 'cli', 'index.js');",
+        `let cliPath = ${jsonCli};`,
+      );
+      await fs.writeFile(dest, content, 'utf-8');
+    } catch {
+      // Source script missing (dev tree or partial install) — skip.
+    }
+
+    const hookPath = path.join(destHooksDir, 'gitnexus-hook.cjs').replace(/\\/g, '/');
+    const hookCmd = `node "${hookPath.replace(/"/g, '\\"')}"`;
+
+    const hooksJsonPath = path.join(codexDir, 'hooks.json');
+    const parsed = await (async () => {
+      try {
+        const r = await fs.readFile(hooksJsonPath, 'utf-8');
+        return parseJsonc(r);
+      } catch {
+        return null;
+      }
+    })();
+
+    if (hasCodexGitnexusPostToolUse(parsed)) {
+      result.configured.push('Codex hooks (already configured)');
+    } else {
+      const matcherEntry = {
+        matcher: 'Bash',
+        hooks: [
+          {
+            type: 'command',
+            command: hookCmd,
+            timeout: 10,
+            statusMessage: 'GitNexus augment',
+          },
+        ],
+      };
+
+      let raw = '';
+      try {
+        raw = await fs.readFile(hooksJsonPath, 'utf-8');
+      } catch {
+        raw = '';
+      }
+
+      let ok: boolean;
+      if (raw.trim().length === 0) {
+        await fs.mkdir(path.dirname(hooksJsonPath), { recursive: true });
+        const seed = { hooks: { PostToolUse: [matcherEntry] } };
+        await fs.writeFile(hooksJsonPath, JSON.stringify(seed, null, 2) + '\n', 'utf-8');
+        ok = true;
+      } else {
+        ok = await mergeHooksJsonc(hooksJsonPath, [
+          { eventName: 'PostToolUse', value: matcherEntry },
+        ]);
+      }
+
+      if (!ok) {
+        result.errors.push(
+          'Codex hooks: hooks.json is corrupt — skipping to preserve existing content',
+        );
+        return;
+      }
+
+      result.configured.push('Codex hooks (PostToolUse)');
+    }
+
+    const featureEnabled = await ensureCodexHooksFeatureFlag(path.join(codexDir, 'config.toml'));
+    if (!featureEnabled) {
+      result.errors.push(
+        'Codex hooks: [features] codex_hooks is set to false in ~/.codex/config.toml — hooks will not run',
+      );
+    }
+  } catch (err: any) {
+    result.errors.push(`Codex hooks: ${err.message}`);
   }
 }
 
@@ -783,6 +956,7 @@ export const setupCommand = async () => {
   // Install global skills / hooks for platforms that support them (not ~/.claude —
   // we only merge MCP into ~/.claude.json when that directory already exists).
   await installCursorHooks(result);
+  await installCodexHooks(result);
   await installCursorSkills(result);
   await installOpenCodeSkills(result);
   await installCodexSkills(result);
@@ -813,12 +987,14 @@ export const setupCommand = async () => {
 
   console.log('');
   console.log('  Summary:');
-  console.log(
-    `    MCP configured for: ${result.configured.filter((c) => !c.includes('skills')).join(', ') || 'none'}`,
+  const skillEntries = result.configured.filter((c) => c.includes('skills'));
+  const hookEntries = result.configured.filter((c) => /\bhooks\b/i.test(c));
+  const mcpEntries = result.configured.filter(
+    (c) => !skillEntries.includes(c) && !hookEntries.includes(c),
   );
-  console.log(
-    `    Skills installed to: ${result.configured.filter((c) => c.includes('skills')).length > 0 ? result.configured.filter((c) => c.includes('skills')).join(', ') : 'none'}`,
-  );
+  console.log(`    MCP configured for: ${mcpEntries.join(', ') || 'none'}`);
+  console.log(`    Hooks installed to: ${hookEntries.join(', ') || 'none'}`);
+  console.log(`    Skills installed to: ${skillEntries.join(', ') || 'none'}`);
   console.log('');
   console.log('  Next steps:');
   console.log('    1. cd into any git repo');

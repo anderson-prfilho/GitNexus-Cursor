@@ -60,11 +60,22 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
 claude mcp add gitnexus -- cmd /c npx -y gitnexus@latest mcp
 ```
 
-### Codex (full support — MCP + skills)
+### Codex (full support — MCP + skills + hooks)
 
 ```bash
 codex mcp add gitnexus -- npx -y gitnexus@latest mcp
 ```
+
+`gitnexus setup` also installs a `PostToolUse` hook for Codex
+(`~/.codex/hooks/gitnexus/gitnexus-hook.cjs`) registered in
+`~/.codex/hooks.json` with matcher `Bash`. The hook augments `rg` / `grep`
+results with graph context and warns when the index is stale after
+`git commit / merge / rebase / cherry-pick / pull`. Codex gates hooks
+behind a feature flag, so the installer also ensures
+`[features] codex_hooks = true` in `~/.codex/config.toml`
+(existing `codex_hooks = false` is respected and never overwritten).
+`SessionStart` is intentionally not used — static, session-level context
+is already delivered via `AGENTS.md`.
 
 ### Cursor / Windsurf
 
