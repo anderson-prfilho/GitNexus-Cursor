@@ -1,9 +1,8 @@
 /**
  * AI Context Generator
  *
- * Creates AGENTS.md and CLAUDE.md with full inline GitNexus context.
- * AGENTS.md is the standard read by Cursor, Windsurf, OpenCode, Codex, Cline, etc.
- * CLAUDE.md is for Claude Code which only reads that file.
+ * Creates or updates AGENTS.md with the inline GitNexus context block.
+ * (CLAUDE.md is not written — Claude Code users can copy from AGENTS.md if needed.)
  */
 
 import fs from 'fs/promises';
@@ -109,7 +108,7 @@ function generateGitNexusContent(
 
   // Standard skill rows reference files installed by installSkills(). When
   // --skip-skills suppresses that install, these rows must be omitted — else
-  // AGENTS.md/CLAUDE.md would direct agents to read files that don't exist.
+  // AGENTS.md would direct agents to read files that don't exist.
   // Community skills (generatedRows) live under .cursor/skills/ (same root as
   // generateSkillFiles) and are independent of --skip-skills, so they remain when present.
   const standardSkillsRows = skipSkills
@@ -214,7 +213,7 @@ async function upsertGitNexusSection(
   // Check if GitNexus section already exists. Matching is restricted
   // to markers that occupy their own line so that inline prose
   // references (e.g. `` See the `<!-- gitnexus:start -->` block `` in
-  // the shipped CLAUDE.md) are NOT treated as section delimiters
+  // shipped AGENTS.md) are NOT treated as section delimiters
   // (#1041). The end-marker scan starts after the start-marker so it
   // can never pick up an earlier end in the file.
   const startIdx = findSectionMarkerIndex(existingContent, GITNEXUS_START_MARKER);
@@ -388,7 +387,6 @@ export async function generateAIContextFiles(
   const createdFiles: string[] = [];
 
   if (!options?.skipAgentsMd) {
-    // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Cline, etc.)
     const agentsPath = path.join(repoPath, 'AGENTS.md');
     const agentsResult = await upsertGitNexusSection(agentsPath, content, projectName, stats);
     createdFiles.push(`AGENTS.md (${agentsResult})`);
@@ -399,7 +397,6 @@ export async function generateAIContextFiles(
     createdFiles.push(`CLAUDE.md (${claudeResult})`);
   } else {
     createdFiles.push('AGENTS.md (skipped via --skip-agents-md)');
-    createdFiles.push('CLAUDE.md (skipped via --skip-agents-md)');
   }
 
   // Install skills under .cursor/skills/ (unless --skip-skills)

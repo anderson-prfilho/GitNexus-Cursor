@@ -182,7 +182,7 @@ export interface AnalyzeOptions {
   dropEmbeddings?: boolean;
   skills?: boolean;
   verbose?: boolean;
-  /** Skip AGENTS.md and CLAUDE.md gitnexus block updates. */
+  /** Skip AGENTS.md gitnexus block updates. */
   skipAgentsMd?: boolean;
   /**
    * Stats inclusion in AGENTS.md and CLAUDE.md.
@@ -236,10 +236,10 @@ export interface AnalyzeOptions {
  *
  * The gated block does two things in sequence: (1) generates the community
  * skill files from `--skills`, and (2) re-runs `generateAIContextFiles` so
- * AGENTS.md/CLAUDE.md can reference the freshly written skills. Both are
+ * AGENTS.md can reference the freshly written skills. These steps are
  * suppressed together — `--index-only` drops the entire step, not just the
  * community-skill write. Name retained for the test contract; see call site
- * in `analyzeCommand` for the AGENTS.md/CLAUDE.md re-generation it also gates.
+ * in `analyzeCommand` for the AGENTS.md re-generation it also gates.
  *
  * Kept as a pure helper so the `--index-only --skills` contract is unit-tested
  * without booting the full analyze pipeline (#742 review).

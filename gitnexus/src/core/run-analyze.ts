@@ -89,9 +89,9 @@ export interface AnalyzeOptions {
    */
   dropEmbeddings?: boolean;
   skipGit?: boolean;
-  /** Skip AGENTS.md and CLAUDE.md gitnexus block updates. */
+  /** Skip AGENTS.md gitnexus block updates. */
   skipAgentsMd?: boolean;
-  /** Omit volatile symbol/relationship counts from AGENTS.md and CLAUDE.md. */
+  /** Omit volatile symbol/relationship counts from the AGENTS.md gitnexus section. */
   noStats?: boolean;
   /** Skip installing standard GitNexus skill files under .cursor/skills/. */
   skipSkills?: boolean;
