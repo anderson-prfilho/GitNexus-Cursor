@@ -135,11 +135,11 @@ export interface AnalyzeOptions {
    */
   dropEmbeddings?: boolean;
   skipGit?: boolean;
-  /** Skip AGENTS.md gitnexus block updates. */
+  /** Skip AGENTS.md and CLAUDE.md gitnexus block updates. */
   skipAgentsMd?: boolean;
-  /** Omit volatile symbol/relationship counts from the AGENTS.md gitnexus section. */
+  /** Omit volatile symbol/relationship counts from AGENTS.md and CLAUDE.md. */
   noStats?: boolean;
-  /** Skip installing standard GitNexus skill files under .cursor/skills/. */
+  /** Skip installing standard GitNexus skill files to .claude/skills/gitnexus/. */
   skipSkills?: boolean;
   /**
    * Build the CFG/PDG substrate (#2081 M1). Forwarded to `PipelineOptions.pdg`,

@@ -604,7 +604,7 @@ export interface AnalyzeOptions {
   dropEmbeddings?: boolean;
   skills?: boolean;
   verbose?: boolean;
-  /** Skip AGENTS.md gitnexus block updates. */
+  /** Skip AGENTS.md and CLAUDE.md gitnexus block updates. */
   skipAgentsMd?: boolean;
   /**
    * Build the control-flow-graph / PDG substrate (#2081 M1). Opt-in; off by
@@ -624,7 +624,7 @@ export interface AnalyzeOptions {
    * default-on case.
    */
   stats?: boolean;
-  /** Skip installing standard GitNexus skill files under .cursor/skills/. */
+  /** Skip installing standard GitNexus skill files to .claude/skills/gitnexus/. */
   skipSkills?: boolean;
   /**
    * Default branch for the generated regression-compare example (#243). From
@@ -699,10 +699,10 @@ export interface AnalyzeOptions {
  *
  * The gated block does two things in sequence: (1) generates the community
  * skill files from `--skills`, and (2) re-runs `generateAIContextFiles` so
- * AGENTS.md can reference the freshly written skills. These steps are
+ * AGENTS.md/CLAUDE.md can reference the freshly written skills. Both are
  * suppressed together — `--index-only` drops the entire step, not just the
  * community-skill write. Name retained for the test contract; see call site
- * in `analyzeCommand` for the AGENTS.md re-generation it also gates.
+ * in `analyzeCommand` for the AGENTS.md/CLAUDE.md re-generation it also gates.
  *
  * Kept as a pure helper so the `--index-only --skills` contract is unit-tested
  * without booting the full analyze pipeline (#742 review).

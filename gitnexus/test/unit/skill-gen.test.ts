@@ -174,7 +174,7 @@ describe('generateSkillFiles — return values', () => {
     );
 
     expect(result.skills).toEqual([]);
-    expect(result.outputPath).toBe(path.join(tmpDir, '.cursor', 'skills'));
+    expect(result.outputPath).toBe(path.join(tmpDir, '.claude', 'skills', 'generated'));
   });
 
   /**
@@ -573,10 +573,10 @@ describe('generateSkillFiles — file output', () => {
   }
 
   /**
-   * Verify that each community produces a directory under .cursor/skills/
+   * Verify that each community produces a directory under generated/
    * containing a SKILL.md file.
    */
-  it('creates .cursor/skills/{name}/SKILL.md for each community', async () => {
+  it('creates generated/{name}/SKILL.md for each community', async () => {
     const { graph, communities, memberships } = twoCommSetup();
 
     await generateSkillFiles(
@@ -590,7 +590,7 @@ describe('generateSkillFiles — file output', () => {
       }),
     );
 
-    const outputDir = path.join(tmpDir, '.cursor', 'skills');
+    const outputDir = path.join(tmpDir, '.claude', 'skills', 'generated');
     const alphaSkill = await fs.readFile(path.join(outputDir, 'alpha', 'SKILL.md'), 'utf-8');
     const betaSkill = await fs.readFile(path.join(outputDir, 'beta', 'SKILL.md'), 'utf-8');
     expect(alphaSkill.length).toBeGreaterThan(0);
@@ -616,7 +616,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.cursor', 'skills', 'alpha', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'generated', 'alpha', 'SKILL.md'),
       'utf-8',
     );
     expect(content.startsWith('---')).toBe(true);
@@ -700,7 +700,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.cursor', 'skills', 'alpha', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'generated', 'alpha', 'SKILL.md'),
       'utf-8',
     );
 
@@ -737,7 +737,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.cursor', 'skills', 'isolated', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'generated', 'isolated', 'SKILL.md'),
       'utf-8',
     );
 
@@ -770,7 +770,7 @@ describe('generateSkillFiles — file output', () => {
       }),
     );
 
-    const outputDir = path.join(tmpDir, '.cursor', 'skills');
+    const outputDir = path.join(tmpDir, '.claude', 'skills', 'generated');
     const firstRunDirs = await fs.readdir(outputDir);
     expect(firstRunDirs).toContain('first');
 
@@ -825,7 +825,7 @@ describe('generateSkillFiles — file output', () => {
     );
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.cursor', 'skills', 'stats', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'generated', 'stats', 'SKILL.md'),
       'utf-8',
     );
 
@@ -862,7 +862,14 @@ describe('generateSkillFiles — file output', () => {
     // The kebab name should only contain lowercase alphanumerics and dashes
     expect(result.skills[0].name).toMatch(/^[a-z0-9-]+$/);
 
-    const skillPath = path.join(tmpDir, '.cursor', 'skills', result.skills[0].name, 'SKILL.md');
+    const skillPath = path.join(
+      tmpDir,
+      '.claude',
+      'skills',
+      'generated',
+      result.skills[0].name,
+      'SKILL.md',
+    );
     const content = await fs.readFile(skillPath, 'utf-8');
     expect(content.length).toBeGreaterThan(0);
   });
@@ -926,7 +933,7 @@ describe('generateSkillFiles — file output', () => {
     expect(result.skills).toHaveLength(1);
 
     const content = await fs.readFile(
-      path.join(tmpDir, '.cursor', 'skills', 'win', 'SKILL.md'),
+      path.join(tmpDir, '.claude', 'skills', 'generated', 'win', 'SKILL.md'),
       'utf-8',
     );
 

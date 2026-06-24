@@ -68,7 +68,7 @@ export const generateSkillFiles = async (
   pipelineResult: PipelineResult,
 ): Promise<{ skills: GeneratedSkillInfo[]; outputPath: string }> => {
   const { communityResult, processResult, graph } = pipelineResult;
-  const outputDir = path.join(repoPath, '.cursor', 'skills');
+  const outputDir = path.join(repoPath, '.claude', 'skills', 'generated');
 
   if (!communityResult || !communityResult.memberships.length) {
     console.log('\n  Skills: no communities detected, skipping skill generation');
@@ -176,7 +176,7 @@ export const generateSkillFiles = async (
     );
   }
 
-  console.log(`\n  ${skills.length} skills generated \u2192 .cursor/skills/`);
+  console.log(`\n  ${skills.length} skills generated \u2192 .claude/skills/generated/`);
 
   return { skills, outputPath: outputDir };
 };
